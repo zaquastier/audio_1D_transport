@@ -1,6 +1,8 @@
 import numpy as np
 import ot
 from scipy.sparse import csr_matrix
+import ipywidgets as widgets
+import IPython
 
 def dirac_distribution(frequencies, values, n=1000):
     if not len(frequencies) == len(values):
@@ -52,7 +54,6 @@ def emd_optimal_transport(frequency, a1, a2, alpha=0.5): # can i get rid of freq
     
     return emd_interpolation
 
-
 # STFT    
 
 def normalized_frame(stft, index):
@@ -62,4 +63,16 @@ def normalized_frame(stft, index):
     frame = frame / frame_relative_amplitude
 
     return frame, frame_relative_amplitude
+
+# Display
+
+def audio_widget(signal, title, sr=44100):
+
+    audio_player = IPython.display.Audio(data=signal, rate=sr)
+    out = widgets.Output()
+    with out:
+        display(audio_player)
+    combined_widget = widgets.VBox([widgets.Label(title), out])
+
+    return combined_widget
     
