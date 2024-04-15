@@ -97,7 +97,17 @@ def sinkhorn_stabilized_optimal_transport(source, target, alpha=0.5, reg=1e-2, i
 
     return ss_interpolation
 
-# STFT    
+# FFT
+
+def invert_magnitude_fft(magnitude, source, target, alpha):
+    complex_spectrum = np.zeros_like(magnitude)
+    for i in range(complex_spectrum.shape[0]):
+        if np.abs(source[i]) != 0:
+            complex_spectrum[i] += (1 - alpha) * source[i] / np.abs(source[i])
+        if np.abs(target[i]) != 0:
+            complex_spectrum[i] += alpha * target[i] / np.abs(target[i])
+    complex_spectrum *= magnitude
+    return np.fft.ifft(complex_spectrum)    
 
 def normalized_frame(stft, index):
     frame = stft[:, index]
