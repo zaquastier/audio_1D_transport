@@ -3,7 +3,6 @@ import ot
 from scipy.sparse import csr_matrix
 import ipywidgets as widgets
 import IPython
-import matplotlib.pyplot as plt
 
 def dirac_distribution(frequencies, values, n=1000):
     if not len(frequencies) == len(values):
@@ -133,76 +132,3 @@ def audio_widget(signal, title, sr=44100):
 
     return combined_widget
     
-# Cost matrix exp
-
-from math import log
-
-def itakura_saito(f1, f2):
-    if f1 == 0 or f2 == 0:
-        return np.inf
-    
-    return f1 / f2 - log(f1 / f2) - 1
-
-def chi_2(f1, f2):
-    if f1 == 0 or f2 == 0:
-        return np.inf
-    
-    return (f1 - f2)**2 / f1
-
-def euclidean(f1, f2):
-    return np.abs(f1 - f2)
-
-def identity_distance(f1, f2):
-    return f1
-
-def one(f1, f2):
-    return 1
-
-def cost_matrix(support, source, target, freq_dist, amp_dist, return_distances=True):
-    n_samples = len(support)
-    M = np.zeros((n_samples, n_samples))
-
-    for i in range(n_samples):
-        for j in range(n_samples):
-            M[i, j] = freq_dist(support[i], support[j]) * amp_dist(source[i], target[j])
-
-    return M
-
-def plot_submatrix(matrix, support, size_submatrix, line_index, col_index):
-    sub_row_support = support[line_index - size_submatrix : line_index + size_submatrix]
-    sub_col_support = support[col_index - size_submatrix : col_index + size_submatrix]
-
-    sub_matrix = matrix[line_index - size_submatrix : line_index + size_submatrix, col_index - size_submatrix : col_index + size_submatrix]
-    
-    support_step = size_submatrix // 3
-    fig, ax = plt.subplots(figsize=(5, 5))
-    ax.matshow(sub_matrix)
-    ax.set(xticks=np.arange(0, len(sub_col_support))[::support_step], xticklabels=sub_col_support[::support_step])
-    ax.set(yticks=np.arange(0, len(sub_row_support))[::support_step], yticklabels=sub_row_support[::support_step])
-    ax.set_xlabel("Target", fontsize=10)
-    ax.set_ylabel("Source", fontsize=10)
-
-    cax = ax.matshow(sub_matrix, cmap='viridis')  # Use the colormap of your choice
-    fig.colorbar(cax)
-
-
-def submatrix(matrix, size_submatrix, line_index, col_index):
-    return matrix[line_index - size_submatrix : line_index + size_submatrix, col_index - size_submatrix : col_index + size_submatrix]
-
-def emd_custom_matrix(support, source, target, freq_dist, amp_dist, alpha=0.5):
-    M = cost_matrix(support, source, target, freq_dist, amp_dist)
-    max_finite_value = np.nanmax(M[np.isfinite(M)])
-    
-    M[np.isinf(M)] = max_finite_value
-    M[np.isnan(M)] = max_finite_value
-
-    emd_plan = ot.lp.emd(source, target, M)
-    emd_plan[np.isnan(emd_plan)] = 0
-    emd_plan = csr_matrix(emd_plan)
-    emd_interpolation = np.zeros(len(support))
-    row, col = emd_plan.nonzero()
-    for i, j in zip(row, col):
-        index = get_frequency(i, j, alpha=alpha, method='int')
-        emd_interpolation[index] += emd_plan[i, j]
-    
-    return emd_interpolation, np.array(emd_plan.todense())
